@@ -2,24 +2,28 @@
 document.addEventListener("mouseup", function (e) {
   let selectedText = window.getSelection().toString().trim();
   if (selectedText.length > 0) {
-    fetchDefinition(selectedText, e);
+    fetchDefinitions(selectedText, e);
   }
 });
 
-function fetchDefinition(word, event) {
+function fetchDefinitions(word, event) {
   fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
     .then((response) => response.json())
     .then((data) => {
       if (Array.isArray(data) && data.length > 0) {
-        let definition = data[0].meanings[0].definitions[0].definition;
+        let definitions = data[0].meanings
+          .flatMap((meaning) =>
+            meaning.definitions.map((def) => def.definition)
+          )
+          .slice(0, 4); // Get up to 4 definitions
         let audioUrl = data[0].phonetics.find((p) => p.audio)?.audio || "";
-        showDefinition(word, definition, event, audioUrl);
+        showDefinition(word, definitions, event, audioUrl);
       }
     })
     .catch((error) => console.error("Error:", error));
 }
 
-function showDefinition(word, definition, event, audioUrl) {
+function showDefinition(word, definitions, event, audioUrl) {
   let selection = window.getSelection();
   let range = selection.getRangeAt(0);
   let rect = range.getBoundingClientRect();
@@ -30,7 +34,8 @@ function showDefinition(word, definition, event, audioUrl) {
     background-color: #ffffcc;
     border: 1px solid #e6e6b8;
     border-radius: 4px;
-    padding: 12px;
+    padding-top: 12px;
+    padding-bottom: 18px;
     z-index: 1000;
     max-width: 300px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -58,12 +63,30 @@ function showDefinition(word, definition, event, audioUrl) {
     ">🔊</span>
   `;
 
-  popup.innerHTML = `
-    ${closeButton}
-    <strong>${word}</strong>${speakerButton}<br>
-    ${definition}
+  let moreButton = `
+    <span style="
+      position: absolute;
+      bottom: 3px;
+      right: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #666;
+    ">>></span>
   `;
 
+  function createContent(showAll = false) {
+    let definitionsToShow = showAll ? definitions : [definitions[0]];
+    return `
+      ${closeButton}
+      <strong>${word}</strong>${speakerButton}<br>
+      ${definitionsToShow
+        .map((def, index) => `${index + 1}. ${def}`)
+        .join("<br>")}
+      ${definitions.length > 1 ? moreButton : ""}
+    `;
+  }
+
+  popup.innerHTML = createContent();
   document.body.appendChild(popup);
 
   // Calculate and set position after the popup is added to the DOM
@@ -93,6 +116,14 @@ function showDefinition(word, definition, event, audioUrl) {
     });
   } else {
     popup.querySelector("span:nth-child(3)").style.display = "none";
+  }
+
+  // More button functionality
+  if (definitions.length > 1) {
+    popup.querySelector("span:last-child").addEventListener("click", () => {
+      popup.innerHTML = createContent(true);
+      popup.querySelector("span:last-child").style.display = "none"; // Hide "more" button after showing all definitions
+    });
   }
 
   // Remove the popup when clicking outside
