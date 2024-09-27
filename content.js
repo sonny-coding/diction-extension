@@ -5,23 +5,31 @@ document.addEventListener("mouseup", function (e) {
     fetchDefinitions(selectedText, e);
   }
 });
+// document.addEventListener("mouseup", (e) => {
+//   let seletectedText = window.getSelection().toString().trim();
+//   if (seletectedText.length > 0) {
+//     fetchDefinitions(seletectedText, e);
+//   }
+// });
 
-function fetchDefinitions(word, event) {
-  fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
-    .then((response) => response.json())
-    .then((data) => {
-      if (Array.isArray(data) && data.length > 0) {
-        let definitions = data[0].meanings
-          .flatMap((meaning) =>
-            meaning.definitions.map((def) => def.definition)
-          )
-          .slice(0, 4); // Get up to 4 definitions
-        let audioUrl = data[0].phonetics.find((p) => p.audio)?.audio || "";
-        showDefinition(word, definitions, event, audioUrl);
-      }
-    })
-    .catch((error) => console.error("Error:", error));
-}
+const fetchDefinitions = async (word, event) => {
+  try {
+    const res = await fetch(
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`
+    );
+    const data = await res.json();
+
+    if (Array.isArray(data) && data.length > 0) {
+      let definitions = data[0].meanings
+        .flatMap((meaning) => meaning.definitions.map((def) => def.definition))
+        .slice(0, 4); // Get up to 4 definitions
+      let audioUrl = data[0].phonetics.find((p) => p.audio)?.audio || "";
+      showDefinition(word, definitions, event, audioUrl);
+    }
+  } catch (error) {
+    throw new Error(`Failed to fetch definitions: ${error.message}`);
+  }
+};
 
 function showDefinition(word, definitions, event, audioUrl) {
   let selection = window.getSelection();
@@ -35,7 +43,7 @@ function showDefinition(word, definitions, event, audioUrl) {
     border: 1px solid #e6e6b8;
     border-radius: 4px;
     padding-top: 12px;
-    padding-bottom: 18px;
+    padding-bottom: 24px;
     z-index: 1000;
     max-width: 300px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -73,7 +81,7 @@ function showDefinition(word, definitions, event, audioUrl) {
       color: #666;
     ">>></span>
   `;
-
+  // this function creates the inner content of the popup
   function createContent(showAll = false) {
     let definitionsToShow = showAll ? definitions : [definitions[0]];
     return `

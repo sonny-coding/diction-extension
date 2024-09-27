@@ -3,9 +3,15 @@
   "name": "Word Definition Extension",
   "version": "1.0",
   "description": "Shows the definition of a highlighted word",
-  "permissions": ["activeTab", "https://api.dictionaryapi.dev/"],
-  "browser_action": {
-    "default_icon": "icon.svg"
+  "permissions": ["activeTab"],
+  "host_permissions": ["https://api.dictionaryapi.dev/"],
+  "action": {
+    "default_icon": "icon.svg",
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "48": "icon.svg",
+    "128": "icon.svg"
   },
   "content_scripts": [
     {
